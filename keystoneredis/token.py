@@ -24,6 +24,7 @@ from keystone import token
 from keystone.openstack.common import jsonutils
 
 from common.session import RedisSession
+from common import keys
 
 class Token(RedisSession, token.Driver):
 
@@ -31,7 +32,7 @@ class Token(RedisSession, token.Driver):
         RedisSession.__init__(self, *args, **kwargs)
 
     def get_token(self, token_id):
-        token_key = 'token-{0}'.format(token_id)
+        token_key = keys.token(token_id)
         value = self.local_client.get(token_key)
         if value:
             return jsonutils.loads(value)
@@ -39,9 +40,9 @@ class Token(RedisSession, token.Driver):
 
     def _set_on_client(self, client, user_id, token_id, json_data, ttl_seconds):
         pipe = client.pipeline()
-        token_key = 'token-{0}'.format(token_id)
+        token_key = keys.token(token_id)
         if user_id:
-            user_key = 'user-{0}-{1}'.format(user_id['id'], token_id)
+            user_key = keys.usertoken(user_id['id'], token_id)
         if ttl_seconds is None:
             pipe.set(token_key, json_data)
             if user_id:
@@ -69,10 +70,10 @@ class Token(RedisSession, token.Driver):
 
     def _delete_on_client(self, client, user_id, token_id):
         pipe = client.pipeline()
-        token_key = 'token-{0}'.format(token_id)
+        token_key = keys.token(token_id)
         pipe.delete(token_key)
         if user_id is not None:
-            user_key = 'user-{0}-{1}'.format(user_id['id'], token_id)
+            user_key = keys.usertoken(user_id['id'], token_id)
             pipe.delete(user_key)
         pipe.execute()
 
@@ -87,6 +88,29 @@ class Token(RedisSession, token.Driver):
                 pass
 
     def list_tokens(self, user_id):
-        user_keys = self.local_client.keys('user-{0}-*'.format(user_id))
-        return [key.rsplit('-', 1)[-1] for key in user_keys]
+        pattern = keys.usertoken(user_id, '*')
+        user_keys = self.local_client.keys(pattern)
+        return [keys.parse_usertoken(key)[1] for key in user_keys]
+
+
+class TokenNoList(Token):
+
+    def _set_on_client(self, client, user_id, token_id, json_data, ttl_seconds):
+        token_key = keys.token(token_id)
+        if ttl_seconds is None:
+            client.set(token_key, json_data)
+        else:
+            client.setex(token_key, ttl_seconds, json_data)
+
+    def delete_token(self, token_id):
+        token_key = keys.token(token_id)
+        self.local_client.delete(token_key)
+        for xdc_client in self.xdc_clients:
+            try:
+                xdc_client.delete(token_key)
+            except RedisError:
+                pass
+
+    def list_tokens(self, user_id):
+        raise exception.NotImplemented()
 
