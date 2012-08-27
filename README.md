@@ -62,13 +62,3 @@ This feature is configured by adding at least one `xdc_connection` option to the
 These writes are not asynchronous, success or failure will not be returned to
 the client until all secondary connections have been written to.
 
-Sample Configuration
-====================
-
-    [token]
-    driver = keystoneredis.token.Token
-
-    [redis]
-    connection = read1.redis.vlan1.example.com
-    xdc_connection = read2.redis.
-
