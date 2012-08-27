@@ -62,3 +62,24 @@ This feature is configured by adding at least one `xdc_connection` option to the
 These writes are not asynchronous, success or failure will not be returned to
 the client until all secondary connections have been written to.
 
+Key Schema
+==========
+
+The keys written to redis are as follows
+
+## Tokens
+
+The token entries themselves will look like:
+
+    token e3f75b94322746989868f07d61370086
+
+### User Tokens List
+
+To allow searching for all a particular user's tokens, a second key is generated
+for every token in the following format:
+
+    usertoken dXNlcmlk e3f75b94322746989868f07d61370086
+
+The second piece of the key is a base64 encoded version of the user ID. In this
+example, the user ID is `userid`.
+
