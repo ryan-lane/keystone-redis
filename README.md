@@ -67,7 +67,7 @@ Key Schema
 
 The keys written to redis are as follows
 
-## Tokens
+### Tokens
 
 The token entries themselves will look like:
 
