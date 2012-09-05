@@ -44,7 +44,7 @@ class RedisSession(object):
 
     def _create_client(self, connection, database, idle_timeout):
         try:
-            host, port = connection.split(':', 1)
+            host, port = connection.rsplit(':', 1)
         except ValueError:
             host = connection
             port = 6379
