@@ -31,6 +31,12 @@ To point it to a redis instance on another machine:
     connection = redis-instance.example.com
     # This option can be suffixed with a port number, e.g. :6379.
 
+If you have read-only slaves that should handle any read operations, you can
+configure a custom read-only connection:
+
+    [redis]
+    read_connection = redis-slave.example.com
+
 To configure the redis database number (see the
 [SELECT](http://redis.io/commands/select) command), use the `database` option in
 the `redis` section. To configure the idle timeout, use the `idle_timeout`

@@ -22,16 +22,21 @@ from keystone.common import logging
 from keystone import config
 from keystone.openstack.common import cfg
 
+
 CONF = config.CONF
 
+CONF.register_opt(cfg.StrOpt('read_connection', default=None), group='redis')
 CONF.register_opt(cfg.StrOpt('connection', default='localhost'), group='redis')
 CONF.register_opt(cfg.MultiStrOpt('xdc_connection'), group='redis')
 CONF.register_opt(cfg.IntOpt('idle_timeout', default=200), group='redis')
 CONF.register_opt(cfg.IntOpt('database', default=0), group='redis')
 
+
 class RedisSession(object):
 
+
     def __init__(self, **kwargs):
+        read = kwargs.get('read_connection', CONF.redis.read_connection)
         local = kwargs.get('connection', CONF.redis.connection)
         xdc = kwargs.get('xdc_connections', CONF.redis.xdc_connection) or []
         database = kwargs.get('database', CONF.redis.database)
@@ -42,6 +47,12 @@ class RedisSession(object):
         self.xdc_clients = [self._create_client(conn, database, idle_timeout)
                             for conn in xdc]
 
+        if read:
+            self.read_client = self._create_client(read, database, idle_timeout)
+        else:
+            self.read_client = self.local_client
+
+
     def _create_client(self, connection, database, idle_timeout):
         try:
             host, port = connection.rsplit(':', 1)
@@ -50,4 +61,5 @@ class RedisSession(object):
             port = 6379
         return redis.StrictRedis(host=host, port=port, db=database,
                                  socket_timeout=idle_timeout)
+
 

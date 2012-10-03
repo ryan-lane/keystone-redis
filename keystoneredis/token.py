@@ -33,7 +33,7 @@ class Token(RedisSession, token.Driver):
 
     def get_token(self, token_id):
         token_key = keys.token(token_id)
-        value = self.local_client.get(token_key)
+        value = self.read_client.get(token_key)
         if value:
             return jsonutils.loads(value)
         raise exception.TokenNotFound(token_id=token_id)
@@ -89,7 +89,7 @@ class Token(RedisSession, token.Driver):
 
     def list_tokens(self, user_id):
         pattern = keys.usertoken(user_id, '*')
-        user_keys = self.local_client.keys(pattern)
+        user_keys = self.read_client.keys(pattern)
         return [keys.parse_usertoken(key)[1] for key in user_keys]
 
 
