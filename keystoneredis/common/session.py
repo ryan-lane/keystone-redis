@@ -17,6 +17,7 @@
 """Redis backends for the various services."""
 
 import redis
+from common.redissl import Connection as SslConnection
 
 from keystone.common import logging
 from keystone import config
@@ -30,6 +31,10 @@ CONF.register_opt(cfg.StrOpt('connection', default='localhost'), group='redis')
 CONF.register_opt(cfg.MultiStrOpt('xdc_connection'), group='redis')
 CONF.register_opt(cfg.IntOpt('idle_timeout', default=200), group='redis')
 CONF.register_opt(cfg.IntOpt('database', default=0), group='redis')
+CONF.register_opt(cfg.BoolOpt('ssl', default=False), group='redis')
+CONF.register_opt(cfg.StrOpt('keyfile', default=None), group='redis')
+CONF.register_opt(cfg.StrOpt('certfile', default=None), group='redis')
+CONF.register_opt(cfg.StrOpt('ca_certs', default=None), group='redis')
 
 
 class RedisSession(object):
@@ -59,7 +64,18 @@ class RedisSession(object):
         except ValueError:
             host = connection
             port = 6379
-        return redis.StrictRedis(host=host, port=port, db=database,
-                                 socket_timeout=idle_timeout)
+
+        if CONF.redis.ssl:
+            pool = redis.ConnectionPool(connection_class=SslConnection,
+                                        host=host, port=port, db=database,
+                                        socket_timeout=idle_timeout,
+                                        keyfile=CONF.redis.keyfile,
+                                        certfile=CONF.redis.certfile,
+                                        ca_certs=CONF.redis.ca_certs)
+        else:
+            pool = redis.ConnectionPool(host=host, port=port, db=database,
+                                        socket_timeout=idle_timeout)
+
+        return redis.StrictRedis(connection_pool=pool)
 
 
