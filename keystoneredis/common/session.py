@@ -17,7 +17,7 @@
 """Redis backends for the various services."""
 
 import redis
-from common.redissl import Connection as SslConnection
+from keystoneredis.common.redissl import Connection as SslConnection
 
 from keystone.common import logging
 from keystone import config

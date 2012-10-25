@@ -16,6 +16,8 @@
 
 """Redis backends for the various services."""
 
+import dateutil.parser
+import datetime
 import copy
 
 from keystone import exception
@@ -31,11 +33,20 @@ class Token(RedisSession, token.Driver):
     def __init__(self, *args, **kwargs):
         RedisSession.__init__(self, *args, **kwargs)
 
+    def flush_all(self):
+        self.read_client.flushall()
+
     def get_token(self, token_id):
         token_key = keys.token(token_id)
         value = self.read_client.get(token_key)
         if value:
-            return jsonutils.loads(value)
+            token = jsonutils.loads(value)
+            if token.get('expires', None) is not None:
+                token['expires'] = dateutil.parser.parse(token['expires'])
+                if token['expires'] > timeutils.utcnow():
+                    return token
+            else:
+                return token
         raise exception.TokenNotFound(token_id=token_id)
 
     def _set_on_client(self, client, user_id, token_id, json_data, ttl_seconds):
@@ -67,6 +78,7 @@ class Token(RedisSession, token.Driver):
                                     json_data, self.ttl_seconds)
             except RedisError:
                 pass
+        return data_copy
 
     def _delete_on_client(self, client, user_id, token_id):
         pipe = client.pipeline()
@@ -75,6 +87,7 @@ class Token(RedisSession, token.Driver):
         if user_id is not None:
             user_key = keys.usertoken(user_id['id'], token_id)
             pipe.delete(user_key)
+        pipe.sadd(keys.revoked(), token_id)
         pipe.execute()
 
     def delete_token(self, token_id):
@@ -87,10 +100,13 @@ class Token(RedisSession, token.Driver):
             except RedisError:
                 pass
 
-    def list_tokens(self, user_id):
+    def list_tokens(self, user_id, tenant=None):
         pattern = keys.usertoken(user_id, '*')
         user_keys = self.read_client.keys(pattern)
         return [keys.parse_usertoken(key)[1] for key in user_keys]
+
+    def list_revoked_tokens(self):
+        return [{'id': s} for s in self.read_client.smembers(keys.revoked())]
 
 
 class TokenNoList(Token):
@@ -103,14 +119,16 @@ class TokenNoList(Token):
             client.setex(token_key, ttl_seconds, json_data)
 
     def delete_token(self, token_id):
-        token_key = keys.token(token_id)
-        self.local_client.delete(token_key)
+        self._delete_on_client(self.local_client, None, token_id)
         for xdc_client in self.xdc_clients:
             try:
-                xdc_client.delete(token_key)
+                self._delete_on_client(xdc_client, None, token_id)
             except RedisError:
                 pass
 
     def list_tokens(self, user_id):
+        raise exception.NotImplemented()
+
+    def list_revoked_tokens(self):
         raise exception.NotImplemented()
 

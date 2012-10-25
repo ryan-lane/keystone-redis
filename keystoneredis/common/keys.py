@@ -2,6 +2,9 @@
 from base64 import b64encode
 from base64 import b64decode
 
+def revoked():
+    return 'revoked'
+
 def token(token_id):
     return 'token {0}'.format(token_id)
 
