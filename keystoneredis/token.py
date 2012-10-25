@@ -88,7 +88,7 @@ class Token(RedisSession, token.Driver):
             user_key = keys.usertoken(user_id['id'], token_id)
             pipe.delete(user_key)
         pipe.sadd(keys.revoked(), token_id)
-        pipe.execute()
+        return pipe.execute()[0]
 
     def delete_token(self, token_id):
         data = self.get_token(token_id)
@@ -119,7 +119,8 @@ class TokenNoList(Token):
             client.setex(token_key, ttl_seconds, json_data)
 
     def delete_token(self, token_id):
-        self._delete_on_client(self.local_client, None, token_id)
+        if not self._delete_on_client(self.local_client, None, token_id):
+            raise exception.TokenNotFound(token_id=token_id)
         for xdc_client in self.xdc_clients:
             try:
                 self._delete_on_client(xdc_client, None, token_id)

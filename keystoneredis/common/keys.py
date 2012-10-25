@@ -15,10 +15,10 @@ def usertoken(user_id, token_id):
         return 'usertoken {0} {1}'.format(b64encode(user_id), token_id)
 
 def parse_token(key):
-    t, token_b64 = key.split(' ', 1)
+    t, token = key.split(' ', 1)
     if t != 'token':
         raise ValueError('Expected token key: '+key)
-    return b64decode(token_b64)
+    return token
 
 def parse_usertoken(key):
     t, user_b64, token = key.split(' ', 2)
