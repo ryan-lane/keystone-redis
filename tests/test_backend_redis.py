@@ -45,12 +45,3 @@ class RedisToken(test.TestCase, test_backend.TokenTests):
     def test_token_list(self):
         raise nose.exc.SkipTest('N/A')
 
-#    def test_list_revoked_tokens_for_multiple_tokens(self):
-#        raise nose.exc.SkipTest('N/A')
-#
-#    def test_list_revoked_tokens_for_single_token(self):
-#        raise nose.exc.SkipTest('N/A')
-#
-#    def test_list_revoked_tokens_returns_empty_list(self):
-#        raise nose.exc.SkipTest('N/A')
-
