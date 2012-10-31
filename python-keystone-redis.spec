@@ -1,6 +1,6 @@
 Name:           python-keystone-redis
 Version:        20121025
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Keystone Redis token storage backend
 
 License:        ASL 2.0
@@ -11,6 +11,7 @@ BuildArch:	noarch
 BuildRequires:  python, python-setuptools
 Requires:	python-keystone
 Requires:	python-redis >= 2.6.2
+Requires:	python-dateutil
 
 %description
 Keystone is a Python implementation of the OpenStack
