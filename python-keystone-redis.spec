@@ -1,4 +1,4 @@
-Name:           python-keystone-redis.spec
+Name:           python-keystone-redis
 Version:        20121025
 Release:        1%{?dist}
 Summary:        Keystone Redis token storage backend
@@ -19,12 +19,7 @@ Keystone is a Python implementation of the OpenStack
 This package contains the Rackspace Apps Keystone Redis token storage backend.
 
 %prep
-# Keystone
-#rm -rf %{_sourcedir}/python-keystone-redis-git
-#git clone git://github.rackspace.com/sao-paulo/keystone-redis.git %{_sourcedir}/python-keystone-redis-git
-#cd %{_sourcedir}/python-keystone-redis-git
-#git archive  --format=tar --prefix=python-keystone-redis-git/ HEAD | bzip2 > python-keystone-redis-git.tar.bz2
-#mv python-keystone-redis-git.tar.bz2 %{_sourcedir}
+
 %setup -q -n keystone-redis
 
 %build
