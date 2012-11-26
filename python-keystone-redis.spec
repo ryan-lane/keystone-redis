@@ -5,7 +5,7 @@ Summary:        Keystone Redis token storage backend
 
 License:        ASL 2.0
 URL:            https://github.rackspace.com/sao-paulo/keystone-redis
-Source0:	keystone-redis.tar.bz2
+Source0:	keystone-redis-%{version}.tar.bz2
 
 BuildArch:	noarch
 BuildRequires:  python, python-setuptools
