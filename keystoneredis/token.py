@@ -34,11 +34,11 @@ class Token(RedisSession, token.Driver):
         RedisSession.__init__(self, *args, **kwargs)
 
     def flush_all(self):
-        self.read_client.flushall()
+        self.conn.flushall_everywhere()
 
     def get_token(self, token_id):
         token_key = keys.token(token_id)
-        value = self.read_client.get(token_key)
+        value = self.readonly.get(token_key)
         if value:
             token = jsonutils.loads(value)
             if token.get('expires', None) is not None:
@@ -49,20 +49,20 @@ class Token(RedisSession, token.Driver):
                 return token
         raise exception.TokenNotFound(token_id=token_id)
 
-    def _set_on_client(self, client, user_id, token_id, json_data, ttl_seconds):
-        pipe = client.pipeline()
+    def _set_keys(self, user_id, token_id, json_data, ttl_seconds):
+        commands = []
         token_key = keys.token(token_id)
         if user_id:
             user_key = keys.usertoken(user_id['id'], token_id)
         if ttl_seconds is None:
-            pipe.set(token_key, json_data)
+            commands.append(('set', (token_key, json_data)))
             if user_id:
-                pipe.set(user_key, '')
+                commands.append(('set', (user_key, '')))
         else:
-            pipe.setex(token_key, ttl_seconds, json_data)
+            commands.append(('setex', (token_key, ttl_seconds, json_data)))
             if user_id:
-                pipe.setex(user_key, ttl_seconds, '')
-        pipe.execute()
+                commands.append(('setex', (user_key, ttl_seconds, '')))
+        self.conn.pipe_everywhere(commands)
 
     def create_token(self, token_id, data):
         data_copy = copy.deepcopy(data)
@@ -70,62 +70,46 @@ class Token(RedisSession, token.Driver):
         if 'expires' not in data_copy:
             data_copy['expires'] = self._get_default_expire_time()
         json_data = jsonutils.dumps(data_copy)
-        self._set_on_client(self.local_client, user_id, token_id,
-                            json_data, self.ttl_seconds)
-        for xdc_client in self.xdc_clients:
-            try:
-                self._set_on_client(xdc_client, user_id, token_id,
-                                    json_data, self.ttl_seconds)
-            except RedisError:
-                pass
+        self._set_keys(user_id, token_id, json_data, self.ttl_seconds)
         return data_copy
 
-    def _delete_on_client(self, client, user_id, token_id):
-        pipe = client.pipeline()
+    def _delete_keys(self, user_id, token_id):
+        commands = []
         token_key = keys.token(token_id)
-        pipe.delete(token_key)
+        commands.append(('delete', (token_key, )))
         if user_id is not None:
             user_key = keys.usertoken(user_id['id'], token_id)
-            pipe.delete(user_key)
-        pipe.sadd(keys.revoked(), token_id)
-        return pipe.execute()[0]
+            commands.append(('delete', (user_key, )))
+        commands.append(('sadd', (keys.revoked(), token_id)))
+        return self.conn.pipe_everywhere(commands)[0]
 
     def delete_token(self, token_id):
         data = self.get_token(token_id)
         user_id = data.get('user', None)
-        self._delete_on_client(self.local_client, user_id, token_id)
-        for xdc_client in self.xdc_clients:
-            try:
-                self._delete_on_client(xdc_client, user_id, token_id)
-            except RedisError:
-                pass
+        if not self._delete_keys(user_id, token_id):
+            raise exception.TokenNotFound(token_id=token_id)
 
     def list_tokens(self, user_id, tenant=None):
         pattern = keys.usertoken(user_id, '*')
-        user_keys = self.read_client.keys(pattern)
+        user_keys = self.readonly.keys(pattern)
         return [keys.parse_usertoken(key)[1] for key in user_keys]
 
     def list_revoked_tokens(self):
-        return [{'id': s} for s in self.read_client.smembers(keys.revoked())]
+        return [{'id': s} for s in self.readonly.smembers(keys.revoked())]
 
 
 class TokenNoList(Token):
 
-    def _set_on_client(self, client, user_id, token_id, json_data, ttl_seconds):
+    def _set_keys(self, user_id, token_id, json_data, ttl_seconds):
         token_key = keys.token(token_id)
         if ttl_seconds is None:
-            client.set(token_key, json_data)
+            self.conn.set_everywhere(token_key, json_data)
         else:
-            client.setex(token_key, ttl_seconds, json_data)
+            self.conn.setex_everywhere(token_key, ttl_seconds, json_data)
 
     def delete_token(self, token_id):
-        if not self._delete_on_client(self.local_client, None, token_id):
+        if not self._delete_keys(None, token_id):
             raise exception.TokenNotFound(token_id=token_id)
-        for xdc_client in self.xdc_clients:
-            try:
-                self._delete_on_client(xdc_client, None, token_id)
-            except RedisError:
-                pass
 
     def list_tokens(self, user_id):
         raise exception.NotImplemented()

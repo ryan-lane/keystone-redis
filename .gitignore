@@ -1,5 +1,9 @@
+.coverage
 build/
 dist/
 keystone_redis.egg-info/
 *.pyc
 nosetests.xml
+coverage.xml
+tests/keystone.db
+keystone/
