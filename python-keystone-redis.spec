@@ -11,6 +11,7 @@ BuildArch:	noarch
 BuildRequires:  python, python-setuptools
 Requires:	python-keystone
 Requires:	python-redis >= 2.6.2
+Requires:   python-redis-multiwrite
 Requires:	python-dateutil
 
 %description
