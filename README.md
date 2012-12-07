@@ -1,4 +1,3 @@
-
 Installation
 ============
 
@@ -66,7 +65,9 @@ This feature is configured by adding at least one `xdc_connection` option to the
     # ...
 
 These writes are not asynchronous, success or failure will not be returned to
-the client until all secondary connections have been written to.
+the client until all secondary connections have been written to. See the
+[python-redis-multiwrite](https://github.rackspace.com/sao-paulo/python-redis-multiwrite)
+package for more information.
 
 Key Schema
 ==========
