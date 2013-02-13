@@ -15,15 +15,12 @@
 # under the License.
 
 import nose
-import uuid
 
 from keystone import config
-from keystone import exception
 from keystone import test
 from keystoneredis import token as token_redis
 from keystoneredis.common import keys as redis_keys
 
-import default_fixtures
 import test_backend
 
 

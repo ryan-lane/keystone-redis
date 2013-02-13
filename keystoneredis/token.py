@@ -17,7 +17,6 @@
 """Redis backends for the various services."""
 
 import dateutil.parser
-import datetime
 import copy
 
 from keystone import exception
