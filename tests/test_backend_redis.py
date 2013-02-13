@@ -41,7 +41,29 @@ class RedisToken(test.TestCase, test_backend.TokenTests):
         super(RedisToken, self).tearDown()
 
     def test_token_list(self):
-        raise nose.exc.SkipTest('N/A')
+        tokens = self.token_api.list_tokens('testuserid')
+        self.assertEquals(len(tokens), 0)
+        token_id1 = self.create_token_sample_data()
+        tokens = self.token_api.list_tokens('testuserid')
+        self.assertEquals(len(tokens), 1)
+        self.assertIn(token_id1, tokens)
+        token_id2 = self.create_token_sample_data()
+        tokens = self.token_api.list_tokens('testuserid')
+        self.assertEquals(len(tokens), 2)
+        self.assertIn(token_id2, tokens)
+        self.assertIn(token_id1, tokens)
+        self.token_api.delete_token(token_id1)
+        tokens = self.token_api.list_tokens('testuserid')
+        self.assertIn(token_id2, tokens)
+        self.assertNotIn(token_id1, tokens)
+        self.token_api.delete_token(token_id2)
+        tokens = self.token_api.list_tokens('testuserid')
+        self.assertNotIn(token_id2, tokens)
+        self.assertNotIn(token_id1, tokens)
+
+        # XXX: Please note: keystoneredis does NOT support tenant-specific
+        #      tokens, so that piece of this test (originally copied from
+        #      Keystone proper) has been removed.
 
 
 class RedisTokenNoList(test.TestCase, test_backend.TokenTests):

@@ -1,12 +1,31 @@
+
+About
+=====
+
+This package provides a redis-based token driver for
+[Openstack Keystone](http://keystone.openstack.org/). It was built against the
+"Folsom" milestone, and may not work in "Grizzly" or above.
+
+### Known issues
+
+* The optional tenant ID argument to `list_tokens()` is unused. No plans exist
+  to change this, as it is not currently implementable without a full table scan
+  of each and every token.
+
 Installation
 ============
 
 As the first step, be sure to activate the Python virtualenv environment
-containing your Keystone setup, if applicable.
+containing your Openstack Keystone setup, if applicable.
 
 Install keystone-redis and dependencies:
 
     python setup.py install
+
+To run the tests, make sure the `tests/` directory of the Openstack Keystone
+repository is in your Python path:
+
+    nosetests
 
 Configuration
 =============
@@ -66,7 +85,7 @@ This feature is configured by adding at least one `xdc_connection` option to the
 
 These writes are not asynchronous, success or failure will not be returned to
 the client until all secondary connections have been written to. See the
-[python-redis-multiwrite](https://github.rackspace.com/sao-paulo/python-redis-multiwrite)
+[python-redis-multiwrite](https://github.com/icgood/python-redis-multiwrite)
 package for more information.
 
 Key Schema

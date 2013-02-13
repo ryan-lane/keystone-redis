@@ -32,5 +32,11 @@ setup(name='keystone-redis',
           'python-dateutil',
           'redis',
           'hiredis',
-      ])
+      ],
+      classifiers=['Development Status :: 3 - Alpha',
+                   'Intended Audience :: Developers',
+                   'Intended Audience :: Information Technology',
+                   'License :: OSI Approved :: Apache Software License',
+                   'Environment :: OpenStack',
+                   'Programming Language :: Python'])
 
