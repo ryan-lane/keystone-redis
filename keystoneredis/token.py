@@ -33,7 +33,7 @@ class Token(RedisSession, token.Driver):
         RedisSession.__init__(self, *args, **kwargs)
 
     def flush_all(self):
-        self.conn.flushall_everywhere()
+        self.conn.flushall()
 
     def get_token(self, token_id):
         token_key = keys.token(token_id)
@@ -58,10 +58,10 @@ class Token(RedisSession, token.Driver):
             if user_id:
                 commands.append(('set', (user_key, '')))
         else:
-            commands.append(('setex', (token_key, ttl_seconds, json_data)))
+            commands.append(('setex', (token_key, json_data, ttl_seconds)))
             if user_id:
-                commands.append(('setex', (user_key, ttl_seconds, '')))
-        self.conn.pipe_everywhere(commands)
+                commands.append(('setex', (user_key, '', ttl_seconds)))
+        self.conn.pipe(commands)
 
     def create_token(self, token_id, data):
         data_copy = copy.deepcopy(data)
@@ -80,7 +80,7 @@ class Token(RedisSession, token.Driver):
             user_key = keys.usertoken(user_id['id'], token_id)
             commands.append(('delete', (user_key, )))
         commands.append(('sadd', (keys.revoked(), token_id)))
-        return self.conn.pipe_everywhere(commands)[0]
+        return self.conn.pipe(commands)[0]
 
     def delete_token(self, token_id):
         data = self.get_token(token_id)
@@ -102,9 +102,9 @@ class TokenNoList(Token):
     def _set_keys(self, user_id, token_id, json_data, ttl_seconds):
         token_key = keys.token(token_id)
         if ttl_seconds is None:
-            self.conn.set_everywhere(token_key, json_data)
+            self.conn.set(token_key, json_data)
         else:
-            self.conn.setex_everywhere(token_key, ttl_seconds, json_data)
+            self.conn.setex(token_key, json_data, ttl_seconds)
 
     def delete_token(self, token_id):
         if not self._delete_keys(None, token_id):

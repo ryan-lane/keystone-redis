@@ -17,7 +17,6 @@
 """Redis backends for the various services."""
 
 import redis
-import redismultiwrite as redismw
 from keystoneredis.common.redissl import Connection as SslConnection
 
 from keystone.common import logging
@@ -30,9 +29,9 @@ CONF = config.CONF
 
 CONF.register_opt(cfg.StrOpt('read_connection', default=None), group='redis')
 CONF.register_opt(cfg.StrOpt('connection', default='localhost'), group='redis')
-CONF.register_opt(cfg.MultiStrOpt('xdc_connection'), group='redis')
 CONF.register_opt(cfg.IntOpt('idle_timeout', default=200), group='redis')
 CONF.register_opt(cfg.IntOpt('database', default=0), group='redis')
+CONF.register_opt(cfg.StrOpt('password', default=''), group='redis')
 CONF.register_opt(cfg.IntOpt('retries', default=3), group='redis')
 CONF.register_opt(cfg.IntOpt('greenpool_size', default=None), group='redis')
 CONF.register_opt(cfg.BoolOpt('ssl', default=False), group='redis')
@@ -46,29 +45,25 @@ class RedisSession(object):
     def __init__(self, **kwargs):
         read = kwargs.get('read_connection', CONF.redis.read_connection)
         local = kwargs.get('connection', CONF.redis.connection)
-        xdc = kwargs.get('xdc_connections', CONF.redis.xdc_connection) or []
         database = kwargs.get('database', CONF.redis.database)
+        password = kwargs.get('password', CONF.redis.password)
         idle_timeout = kwargs.get('idle_timeout', CONF.redis.idle_timeout)
         retries = kwargs.get('retries', CONF.redis.retries)
         greenpool_size = kwargs.get('greenpool_size', CONF.redis.greenpool_size)
 
         self.ttl_seconds = CONF.token.expiration
-        self.local_client = self._create_client(local, database, idle_timeout)
-        self.xdc_clients = [self._create_client(conn, database, idle_timeout)
-                            for conn in xdc]
+        self.local_client = self._create_client(local, database, password,
+                                                idle_timeout)
 
-        local = self._create_client(local, database, idle_timeout)
-        remote = [self._create_client(conn, database, idle_timeout)
-                  for conn in xdc]
-        self.conn = redismw.RedisMultiWrite(local, remote, retries=retries,
-                                            log=LOG, pool_size=greenpool_size)
+        self.conn = self.local_client
 
         if read:
-            self.readonly = self._create_client(read, database, idle_timeout)
+            self.readonly = self._create_client(read, database, password,
+                                                idle_timeout)
         else:
             self.readonly = self.local_client
 
-    def _create_client(self, connection, database, idle_timeout):
+    def _create_client(self, connection, database, password, idle_timeout):
         try:
             host, port = connection.rsplit(':', 1)
         except ValueError:
@@ -78,14 +73,16 @@ class RedisSession(object):
         if CONF.redis.ssl:
             pool = redis.ConnectionPool(connection_class=SslConnection,
                                         host=host, port=port, db=database,
+                                        password=password,
                                         socket_timeout=idle_timeout,
                                         keyfile=CONF.redis.keyfile,
                                         certfile=CONF.redis.certfile,
                                         ca_certs=CONF.redis.ca_certs)
         else:
             pool = redis.ConnectionPool(host=host, port=port, db=database,
+                                        password=password,
                                         socket_timeout=idle_timeout)
 
-        return redis.StrictRedis(connection_pool=pool)
+        return redis.Redis(connection_pool=pool)
 
 
