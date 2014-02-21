@@ -3,8 +3,8 @@ About
 =====
 
 This package provides a redis-based token driver for
-[Openstack Keystone](http://keystone.openstack.org/). It was built against the
-"Folsom" milestone, and may not work in "Grizzly" or above.
+[Openstack Keystone](http://keystone.openstack.org/). This
+works for the "Folsom" release and above.
 
 ### Known issues
 
@@ -36,12 +36,6 @@ in the `token` section of `keystone.conf`.
     [token]
     driver = keystoneredis.token.Token
 
-If you do not need to support the ability to invalidate tokens when a user is
-disabled or changes their password, you could use the following instead:
-
-    [token]
-    driver = keystoneredis.token.TokenNoList
-
 If the redis instance is only running on the local machine, you are all set.
 To point it to a redis instance on another machine:
 
@@ -63,30 +57,6 @@ option.
     [redis]
     idle_timeout = 200
     database = 0
-
-Multi-Datacenter Configuration
-==============================
-
-The keystone-redis module can optionally be configured to also write tokens to
-secondary redis instances, such as in the case of multiple datacenters. If
-writing to the primary connection fails, the operation fails, but if writing to
-a secondary connection fails the error is logged but success will still be
-returned.
-
-This feature is configured by adding at least one `xdc_connection` option to the
-`redis` section, using the same format as the `connection` option above.
-
-    [redis]
-    connection = redis.local.example.com
-    xdc_connection = redis.remote1.example.com
-    xdc_connection = redis.remote2.example.com
-    xdc_connection = redis.remote3.example.com
-    # ...
-
-These writes are not asynchronous, success or failure will not be returned to
-the client until all secondary connections have been written to. See the
-[python-redis-multiwrite](https://github.com/icgood/python-redis-multiwrite)
-package for more information.
 
 Key Schema
 ==========

@@ -96,24 +96,3 @@ class Token(RedisSession, token.Driver):
 
     def list_revoked_tokens(self):
         return [{'id': s} for s in self.readonly.smembers(keys.revoked())]
-
-
-class TokenNoList(Token):
-
-    def _set_keys(self, user_id, token_id, json_data, ttl_seconds):
-        token_key = keys.token(token_id)
-        if ttl_seconds is None:
-            self.conn.set(token_key, json_data)
-        else:
-            self.conn.setex(token_key, json_data, ttl_seconds)
-
-    def delete_token(self, token_id):
-        if not self._delete_keys(None, token_id):
-            raise exception.TokenNotFound(token_id=token_id)
-
-    def list_tokens(self, user_id):
-        raise exception.NotImplemented()
-
-    def list_revoked_tokens(self):
-        raise exception.NotImplemented()
-
