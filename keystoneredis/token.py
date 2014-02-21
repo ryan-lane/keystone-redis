@@ -1,6 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Ian Good
+# Copyright 2014 Ryan Lane
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -49,19 +50,19 @@ class Token(RedisSession, token.Driver):
         raise exception.TokenNotFound(token_id=token_id)
 
     def _set_keys(self, user_id, token_id, json_data, ttl_seconds):
-        commands = []
+        pipe = self.conn.pipeline()
         token_key = keys.token(token_id)
         if user_id:
             user_key = keys.usertoken(user_id['id'], token_id)
         if ttl_seconds is None:
-            commands.append(('set', (token_key, json_data)))
+            pipe.set(token_key, json_data)
             if user_id:
-                commands.append(('set', (user_key, '')))
+                pipe.set(user_key, '')
         else:
-            commands.append(('setex', (token_key, json_data, ttl_seconds)))
+            pipe.setex(token_key, json_data, ttl_seconds)
             if user_id:
-                commands.append(('setex', (user_key, '', ttl_seconds)))
-        self.conn.pipe(commands)
+                pipe.setex(user_key, '', ttl_seconds)
+        pipe.execute()
 
     def create_token(self, token_id, data):
         data_copy = copy.deepcopy(data)
@@ -73,14 +74,14 @@ class Token(RedisSession, token.Driver):
         return data_copy
 
     def _delete_keys(self, user_id, token_id):
-        commands = []
+        pipe = self.conn.pipeline()
         token_key = keys.token(token_id)
-        commands.append(('delete', (token_key, )))
+        pipe.delete(token_key, )
         if user_id is not None:
             user_key = keys.usertoken(user_id['id'], token_id)
-            commands.append(('delete', (user_key, )))
-        commands.append(('sadd', (keys.revoked(), token_id)))
-        return self.conn.pipe(commands)[0]
+            pipe.delete(user_key, )
+        pipe.sadd(keys.revoked(), token_id)
+        return pipe.execute()[0]
 
     def delete_token(self, token_id):
         data = self.get_token(token_id)

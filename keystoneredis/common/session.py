@@ -1,6 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Ian Good
+# Copyright 2014 Ryan Lane
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -19,11 +20,11 @@
 import redis
 from keystoneredis.common.redissl import Connection as SslConnection
 
-from keystone.common import logging
 from keystone import config
-from keystone.openstack.common import cfg
-
-LOG = logging.getLogger(__name__)
+try:
+    from oslo.config import cfg
+except ImportError:
+    from keystone.openstack.common import cfg
 
 CONF = config.CONF
 
@@ -32,8 +33,6 @@ CONF.register_opt(cfg.StrOpt('connection', default='localhost'), group='redis')
 CONF.register_opt(cfg.IntOpt('idle_timeout', default=200), group='redis')
 CONF.register_opt(cfg.IntOpt('database', default=0), group='redis')
 CONF.register_opt(cfg.StrOpt('password', default=''), group='redis')
-CONF.register_opt(cfg.IntOpt('retries', default=3), group='redis')
-CONF.register_opt(cfg.IntOpt('greenpool_size', default=None), group='redis')
 CONF.register_opt(cfg.BoolOpt('ssl', default=False), group='redis')
 CONF.register_opt(cfg.StrOpt('keyfile', default=None), group='redis')
 CONF.register_opt(cfg.StrOpt('certfile', default=None), group='redis')
@@ -48,8 +47,6 @@ class RedisSession(object):
         database = kwargs.get('database', CONF.redis.database)
         password = kwargs.get('password', CONF.redis.password)
         idle_timeout = kwargs.get('idle_timeout', CONF.redis.idle_timeout)
-        retries = kwargs.get('retries', CONF.redis.retries)
-        greenpool_size = kwargs.get('greenpool_size', CONF.redis.greenpool_size)
 
         self.ttl_seconds = CONF.token.expiration
         self.local_client = self._create_client(local, database, password,
@@ -84,5 +81,3 @@ class RedisSession(object):
                                         socket_timeout=idle_timeout)
 
         return redis.Redis(connection_pool=pool)
-
-
