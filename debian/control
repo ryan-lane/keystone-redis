@@ -1,0 +1,12 @@
+Source: keystone-redis
+Maintainer: Ryan Lane <rlane@wikimedia.org>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), debhelper (>= 7)
+Standards-Version: 3.9.1
+
+Package: python-keystone-redis
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: Redis backends for Openstack Keystone.
+

@@ -1,0 +1,5 @@
+keystone-redis (0.1.1.wmf1) precise-wikimedia; urgency=low
+
+  * source package automatically created by stdeb 0.6.0+git
+
+ -- Ryan Lane <rlane@wikimedia.org>  Mon, 24 Feb 2014 17:44:26 +0000
